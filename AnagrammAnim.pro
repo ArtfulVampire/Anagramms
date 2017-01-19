@@ -21,4 +21,5 @@ OTHER_FILES += \
 
 DISTFILES += \
     6letOld.txt \
-    7let.txt
+    7let.txt \
+    6LetGood.txt
