@@ -13,24 +13,30 @@
 #include <utility>
 #include <chrono>
 #include <random>
-using namespace std;
+#include <valarray>
+
 
 std::vector<std::string> readWordsFile(const QString & filePath)
 {
     std::vector<std::string> words;
 
-    ifstream fil;
+	std::ifstream fil;
     fil.open(filePath.toStdString());
+
+	if(fil.bad())
+	{
+		return {};
+	}
+
     std::string tmp;
     while(!fil.eof())
     {
-        fil >> tmp;
+		fil >> tmp;
         words.push_back(tmp);
     }
     fil.close();
     return words;
 }
-
 
 void sortFile(const QString & filePath) /// by alphabet
 {
@@ -41,7 +47,6 @@ void sortFile(const QString & filePath) /// by alphabet
               [](const std::string & str1,
               const std::string & str2)
     {
-
         for(auto k = 0; k < std::min(str1.size(), str2.size()); ++k)
         {
             if(str1[k] > str2[k]) return false;
@@ -50,28 +55,23 @@ void sortFile(const QString & filePath) /// by alphabet
     }
     );
 
-    ofstream feel;
+	std::ofstream feel;
     feel.open(filePath.toStdString());
 
     for(auto str : words)
     {
-        feel << str << endl;
+		feel << str << std::endl;
     }
     feel.close();
 }
 
-ostream & operator << (ostream &os, QString toOut)
+std::ostream & operator << (std::ostream &os, const QString & toOut)
 {
     os << toOut.toStdString();
     return os;
 }
 
-QString slash()
-{
-    return QString(QDir::separator());
-}
-
-QString str(const unsigned int input, int N = 3) // prepend zeros
+QString rigtNum(int input, int N = 3) // prepend zeros
 {
     QString h;
     h.setNum(input);
@@ -82,41 +82,65 @@ QString str(const unsigned int input, int N = 3) // prepend zeros
 QString SavePath(QDir * dir, int &i)
 {
     QString h = dir->absolutePath();
-    h += slash() + "anagramm" + str(i) + ".jpg";
+	h += "/anagramm" + rigtNum(i) + ".jpg";
     return h;
+}
+
+QString mixWord(const QString & inWord)
+{
+	std::valarray<int> mixNum(inWord.size());
+	std::iota(std::begin(mixNum),
+			  std::end(mixNum),
+			  0);
+
+	int num = 0;
+
+	do
+	{
+		std::shuffle(std::begin(mixNum),
+					 std::end(mixNum),
+					 std::default_random_engine(
+						 std::chrono::system_clock::now().time_since_epoch().count()));
+		auto nexts = mixNum.cshift(1) - mixNum; /// 1 if next letter is from right order
+		auto prevs = mixNum - mixNum.cshift(-1); /// 1 if prev letter is from right order
+
+		num = 0;
+		for(int i = 0; i < mixNum.size() - 1; ++i)
+		{
+			if(nexts[i] == 1) { num += 1; }
+			if(prevs[i + 1] == 1) { num += 1; }
+		}
+
+		if(mixNum[0] == 0 || mixNum[mixNum.size() - 1] == mixNum.size() - 1)
+		{
+			num += 10;
+		}
+
+
+
+	} while (num > 0);
+
+	QString res = inWord;
+	for(int i = 0; i < inWord.size(); ++i)
+	{
+		res[i] = inWord[mixNum[i]];
+	}
+	return res;
 }
 
 int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
-    srand(time(NULL));
-	int num;
-    std::vector<int> mixNum(8);
 
-    int NumberOfFrames = 25;
     double FontSpace = 120.;
-    double offsetX, offsetY, Radius, rad;
-    double alpha;
-    int letterNumber;
-    int num1, num2;
+	double offsetX, offsetY;
 
-    bool videoFlag;
-    videoFlag = 0;
-//    videoFlag = 1;
-
-    ofstream outF;
-    outF.open("/home/michael/Qt/Projects/AnagrammAnim/6letOut.txt");
-
-
-
-    QString helpStr;
-    QString helpString;
-    QString HELP;
+	QString helpString;
     QPixmap pic(1280, 1024);
-    QPainter * pnt = new QPainter;
-    QDir * dir = new QDir;
+	QPainter pnt;
+	QDir * dir = new QDir();
 	pic.fill(QColor("gray"));
-    pnt->begin(&pic);
+	pnt.begin(&pic);
 
     dir->cd("/media/Files"); //Michael
 
@@ -130,90 +154,51 @@ int main(int argc, char *argv[])
 
 	QFont myFont = QFont("Courier", FontSpace, QFont::Normal);
 
-	pnt->setFont(myFont);
-    pnt->setPen("lightgray");
+	pnt.setFont(myFont);
+	pnt.setPen("lightgray");
 
-	int q = 0;
 	int AnagrammNumber = 1;
-	int k = 1000;
 
     std::vector<std::string> wordList
-            = readWordsFile("/home/michael/Qt/Projects/AnagrammAnim/6letNew.txt");
-	cout << wordList.size() << endl;
-	/// shuffle anagramms
+			= readWordsFile("/home/michael/Qt/Projects/AnagrammAnim/6letGood.txt");
+	/// shuffle anagramms - no need
 	std::shuffle(std::begin(wordList),
 				 std::end(wordList),
 				 std::default_random_engine(
 					 std::chrono::system_clock::now().time_since_epoch().count()));
 
 
-	ofstream answers("/media/Files/Pictures/Anagramms/answers.txt");
+	std::ofstream answers("/media/Files/Pictures/Anagramms/answers.txt");
+
+	QString initWord;
+	QString mixedWord;
     for(const std::string & word : wordList)
     {
-		helpString = QString(word.c_str()); /// ow
-        letterNumber = helpString.length();
-        mixNum.resize(letterNumber);
+		initWord = QString(word.c_str()); /// ow
 
-        helpStr = helpString;
-        HELP = helpString;
-
-		int wordWidth = QFontMetrics(myFont).width(helpString);
+		int wordWidth = QFontMetrics(myFont).width(initWord);
 		int letterHeight = QFontMetrics(myFont).xHeight();
 		offsetX = pic.width() / 2 - wordWidth / 2;
 		offsetY = pic.height() / 2.0 + letterHeight / 2;
 
-        //begin of mixing
-        std::iota(std::begin(mixNum),
-                  std::end(mixNum),
-                  0);
+		mixedWord = mixWord(initWord);
 
-        //first mix of letters, beside first & last - second and pre-last?
-        std::shuffle(std::begin(mixNum) + 1,
-                     std::end(mixNum) - 1,
-                     std::default_random_engine(
-                         std::chrono::system_clock::now().time_since_epoch().count()));
-
-        //now first
-        do
-        {
-            num = rand() % (letterNumber - 2) + 1;
-            std::swap(mixNum[num], mixNum[0]);
-        } while (helpString[mixNum[0]] == helpString[mixNum[num]]);
-
-        // and last
-        do
-        {
-            num = rand() % (letterNumber - 1);
-            std::swap(mixNum[num], mixNum[letterNumber-1]);
-        } while (helpString[mixNum[letterNumber-1]] == helpString[mixNum[num]]);
-
-
-
-        helpString.clear(); //mixed
-        helpStr.clear(); //mixed
-        for(int i = 0; i < letterNumber; ++i)
-        {
-            helpString += HELP[mixNum[i]];
-        }
-        helpStr = helpString;
-
-        cout << HELP << "\t"
-             << helpString << "\t"
-             << helpStr << endl; //check mix
-		answers << HELP.toStdString() << endl;
-
-
-
+		std::cout << initWord << "\t" << mixedWord << std::endl;
 
 		pic.fill(QColor("black"));
-        //draw the first frame
-        pnt->drawText(offsetX, offsetY, helpString.toStdString().c_str());
 
-        helpString = dir->absolutePath()
-                     + slash() + "FirstFrames"
-                     + slash() + "anagramm_"
-                     + str(AnagrammNumber, 3) + ".jpg";
+        //draw the first frame
+		pnt.drawText(offsetX, offsetY, mixedWord);
+
+		helpString = dir->absolutePath()
+					 + "/FirstFrames"
+					 + "/anagramm_"
+					 + rigtNum(AnagrammNumber, 3) + ".jpg";
         pic.save(helpString, 0, 100);
+
+
+
+		if(AnagrammNumber == 150) break;
 
         ++AnagrammNumber; continue; // only FirstFrames
 
@@ -228,7 +213,8 @@ int main(int argc, char *argv[])
 
 
 
-
+#if 0
+		/// video
         k=0; //number of current jpg-frame
         for(q=0; q<letterNumber/2+1; ++q) //begin N iterations of back-mixing
         {
@@ -274,10 +260,10 @@ int main(int argc, char *argv[])
                     //+Radius+rad= (num2-2/4.)*FontSpace
 
                     alpha=M_PI/NumberOfFrames*i; //current angle of rotation
-                    pnt->drawText(offsetX, offsetY, helpString);
+					pnt.drawText(offsetX, offsetY, helpString);
                     //q-1 < num2 always
-                    pnt->drawText(offsetX+int(Radius-rad*cos(alpha)), offsetY-rad*sin(alpha), QString(HELP[mixNum[q]]));
-                    pnt->drawText(offsetX+int(Radius+rad*cos(alpha)), offsetY+rad*sin(alpha), QString(HELP[mixNum[num2]]));
+					pnt.drawText(offsetX+int(Radius-rad*cos(alpha)), offsetY-rad*sin(alpha), QString(HELP[mixNum[q]]));
+					pnt.drawText(offsetX+int(Radius+rad*cos(alpha)), offsetY+rad*sin(alpha), QString(HELP[mixNum[num2]]));
                     ++k;
                     cout<<SavePath(dir, k).toStdString()<<" "<<pic.isNull()<<" "<<pic.save(SavePath(dir, k), 0, 100)<<endl;
                 }
@@ -338,10 +324,10 @@ int main(int argc, char *argv[])
                     //Radius-rad = (num1-1/2)*FontSpace
 
                     alpha=M_PI/NumberOfFrames*i; //current angle of rotation
-                    pnt->drawText(offsetX, offsetY, helpString);
+					pnt.drawText(offsetX, offsetY, helpString);
                     //q-1 < num2 always
-                    pnt->drawText(offsetX+int(Radius-rad*cos(alpha)), offsetY-rad*sin(alpha), QString(HELP[mixNum[num1]]));
-                    pnt->drawText(offsetX+int(Radius+rad*cos(alpha)), offsetY+rad*sin(alpha), QString(HELP[mixNum[letterNumber-q-1]]));
+					pnt.drawText(offsetX+int(Radius-rad*cos(alpha)), offsetY-rad*sin(alpha), QString(HELP[mixNum[num1]]));
+					pnt.drawText(offsetX+int(Radius+rad*cos(alpha)), offsetY+rad*sin(alpha), QString(HELP[mixNum[letterNumber-q-1]]));
                     ++k;
                     cout<<SavePath(dir, k).toStdString()<<" "<<pic.isNull()<<" "<<pic.save(SavePath(dir, k), 0, 100)<<endl;
                 }
@@ -391,13 +377,10 @@ int main(int argc, char *argv[])
 
         ++AnagrammNumber;
 //        if(AnagrammNumber == 1) break;
+#endif
 
-    } //endof while(!feof)
-    outF.close();
+	}
 	answers.close();
-
-    pnt->end();
-    delete pnt;
-
+	pnt.end();
     return 0;
 }
