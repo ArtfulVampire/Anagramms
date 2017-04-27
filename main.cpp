@@ -71,6 +71,17 @@ std::ostream & operator << (std::ostream &os, const QString & toOut)
     return os;
 }
 
+template <template <typename> class Cont, typename Typ>
+std::ostream & operator << (std::ostream &os, const Cont<Typ> & toOut)
+{
+	for(Typ in : toOut)
+	{
+		os << in << " ";
+	}
+	return os;
+}
+template std::ostream & operator<<  (std::ostream & os, const std::valarray<int> & toOut);
+
 QString rigtNum(int input, int N = 3) // prepend zeros
 {
     QString h;
@@ -101,14 +112,15 @@ QString mixWord(const QString & inWord)
 					 std::end(mixNum),
 					 std::default_random_engine(
 						 std::chrono::system_clock::now().time_since_epoch().count()));
-		auto nexts = mixNum.cshift(1) - mixNum; /// 1 if next letter is from right order
-		auto prevs = mixNum - mixNum.cshift(-1); /// 1 if prev letter is from right order
+
+		/// 1 if next letter is from right order
+		/// -1 if prev
+		decltype(mixNum) nexts = mixNum.cshift(1) - mixNum;
 
 		num = 0;
 		for(int i = 0; i < mixNum.size() - 1; ++i)
 		{
-			if(nexts[i] == 1) { num += 1; }
-			if(prevs[i + 1] == 1) { num += 1; }
+			if(std::abs(nexts[i]) == 1) { num += 1; }
 		}
 
 		if(mixNum[0] == 0 || mixNum[mixNum.size() - 1] == mixNum.size() - 1)
@@ -116,8 +128,10 @@ QString mixWord(const QString & inWord)
 			num += 10;
 		}
 
-
-
+//		std::cout << mixNum << "\t"
+//				  << nexts << "\t"
+//				  << num << "\t"
+//				  << std::endl;
 	} while (num > 0);
 
 	QString res = inWord;
@@ -160,7 +174,7 @@ int main(int argc, char *argv[])
 	int AnagrammNumber = 1;
 
     std::vector<std::string> wordList
-			= readWordsFile("/home/michael/Qt/Projects/AnagrammAnim/6letGood.txt");
+			= readWordsFile("../AnagrammAnim/6letPerfect.txt");
 	/// shuffle anagramms - no need
 	std::shuffle(std::begin(wordList),
 				 std::end(wordList),
@@ -194,11 +208,12 @@ int main(int argc, char *argv[])
 					 + "/FirstFrames"
 					 + "/anagramm_"
 					 + rigtNum(AnagrammNumber, 3) + ".jpg";
-        pic.save(helpString, 0, 100);
+
+		pic.save(helpString, 0, 100);
 
 
 
-		if(AnagrammNumber == 150) break;
+//		if(AnagrammNumber == 15) break;
 
         ++AnagrammNumber; continue; // only FirstFrames
 
@@ -225,9 +240,9 @@ int main(int argc, char *argv[])
             }
 
             //a @skeleton@
-            helpString=""; //skeleton string
-            helpStr=""; //what we have before letter changing
-            for(int i=0; i<letterNumber; ++i)
+			helpString.clear(); //skeleton string
+			helpStr.clear(); //what we have before letter changing
+			for(int i = 0; i < letterNumber; ++i)
             {
                 helpStr.append(HELP[mixNum[i]]);
                 if( (i!=q) && (i!=num2) )
@@ -355,18 +370,16 @@ int main(int argc, char *argv[])
 
         }//endof for(q=1...)
 
-        helpString = dir->absolutePath();
-        helpString.prepend("cd ");
-        helpString.append(" && mencoder \"mf://*.jpg\" -mf type=jpg -o anagramm");
-        helpString.append(QString::number(AnagrammNumber)).append(".mpg -ovc lavc -lavcopts vcodec=msmpeg4v2"); //q-current number
-        cout<<helpString.toStdString()<<endl<<endl;
+		helpString = "cd " + dir->absolutePath() + " && mencoder \"mf://*.jpg\" -mf type=jpg -o anagramm"
+					 + QString::number(AnagrammNumber) + ".mpg -ovc lavc -lavcopts vcodec=msmpeg4v2";
+		std::cout << helpString.toStdString() << std::endl;
 
         if(videoFlag == 1) system(helpString.toStdString().c_str()); //make video
 
         QStringList lst = dir->entryList(QStringList("*.jpg"));
-        for(int i=0; i<lst.length(); ++i)
+		for(const QString & fileName : lst)
         {
-            helpString = dir->absolutePath().append(QDir::separator()).append(lst.at(i));
+			helpString = dir->absolutePath() + "/" + fileName;
             if(remove(helpString.toStdString().c_str()) != 0)
             {
                 perror("cannot delete file");

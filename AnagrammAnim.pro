@@ -7,7 +7,7 @@
 QT       += core gui
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
-QMAKE_CXXFLAGS += -std=c++11 #for C++11 standard
+QMAKE_CXXFLAGS += -std=c++14 #for C++11 standard
 
 TARGET = AnagrammAnim
 
@@ -22,4 +22,5 @@ OTHER_FILES += \
 DISTFILES += \
     6letOld.txt \
     7let.txt \
-    6letGood.txt
+    6letGood.txt \
+    6letPerfect.txt
