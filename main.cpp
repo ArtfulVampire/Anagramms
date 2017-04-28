@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
 	int AnagrammNumber = 1;
 
     std::vector<std::string> wordList
-			= readWordsFile("../AnagrammAnim/6letPerfect.txt");
+			= readWordsFile("../AnagrammAnim/6letNewest.txt");
 	/// shuffle anagramms - no need
 	std::shuffle(std::begin(wordList),
 				 std::end(wordList),

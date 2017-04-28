@@ -23,4 +23,5 @@ DISTFILES += \
     6letOld.txt \
     7let.txt \
     6letGood.txt \
-    6letPerfect.txt
+    6letPerfect.txt \
+    6letNewest.txt
