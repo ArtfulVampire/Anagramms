@@ -82,7 +82,7 @@ std::ostream & operator << (std::ostream &os, const Cont<Typ> & toOut)
 }
 template std::ostream & operator<<  (std::ostream & os, const std::valarray<int> & toOut);
 
-QString rigtNum(int input, int N = 3) // prepend zeros
+QString rightNum(int input, int N = 3) // prepend zeros
 {
     QString h;
     h.setNum(input);
@@ -93,7 +93,7 @@ QString rigtNum(int input, int N = 3) // prepend zeros
 QString SavePath(QDir * dir, int &i)
 {
     QString h = dir->absolutePath();
-	h += "/anagramm" + rigtNum(i) + ".jpg";
+	h += "/anagramm" + rightNum(i) + ".jpg";
     return h;
 }
 
@@ -127,11 +127,6 @@ QString mixWord(const QString & inWord)
 		{
 			num += 10;
 		}
-
-//		std::cout << mixNum << "\t"
-//				  << nexts << "\t"
-//				  << num << "\t"
-//				  << std::endl;
 	} while (num > 0);
 
 	QString res = inWord;
@@ -162,8 +157,7 @@ int main(int argc, char *argv[])
     dir->cd("Pictures");
     dir->mkdir("Anagramms");
     dir->cd("Anagramms");
-    dir->mkdir("FirstFrames");
-    dir->mkdir("LastFrames");
+	dir->mkdir("FirstFrames");
 
 
 	QFont myFont = QFont("Courier", FontSpace, QFont::Normal);
@@ -174,15 +168,14 @@ int main(int argc, char *argv[])
 	int AnagrammNumber = 1;
 
     std::vector<std::string> wordList
-			= readWordsFile("../AnagrammAnim/6letNewest.txt");
-	/// shuffle anagramms - no need
+			= readWordsFile("../AnagrammAnim/6letFinal.txt");
+
+	/// shuffle anagramms - not really needed
 	std::shuffle(std::begin(wordList),
 				 std::end(wordList),
 				 std::default_random_engine(
 					 std::chrono::system_clock::now().time_since_epoch().count()));
 
-
-	std::ofstream answers("/media/Files/Pictures/Anagramms/answers.txt");
 
 	QString initWord;
 	QString mixedWord;
@@ -204,10 +197,8 @@ int main(int argc, char *argv[])
         //draw the first frame
 		pnt.drawText(offsetX, offsetY, mixedWord);
 
-		helpString = dir->absolutePath()
-					 + "/FirstFrames"
-					 + "/anagramm_"
-					 + rigtNum(AnagrammNumber, 3) + ".jpg";
+		helpString = "/media/Files/Pictures/AnagrammsFB/anagramm_"
+					 + rightNum(AnagrammNumber, 3) + ".jpg";
 
 		pic.save(helpString, 0, 100);
 
@@ -393,7 +384,6 @@ int main(int argc, char *argv[])
 #endif
 
 	}
-	answers.close();
 	pnt.end();
     return 0;
 }
